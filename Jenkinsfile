@@ -2,92 +2,68 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_PROJECT_NAME = "3tier-app"
+        APP_NAME = "3tier-app"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                // Uses Jenkins SCM config (make sure branch = main)
-                checkout scm
+                git branch: 'main',
+                url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
             }
         }
 
-        stage('Verify Tools') {
+        stage('Verify Docker') {
             steps {
-                sh '''
-                echo "Checking Docker..."
-                docker --version
-
-                echo "Checking Docker Compose..."
-                docker compose version || docker-compose --version
-                '''
+                sh 'docker --version'
+                sh 'docker compose version || docker-compose --version'
             }
         }
 
         stage('Stop Old Containers') {
             steps {
-                sh '''
-                docker compose down || true
-                '''
+                sh 'docker compose down || true'
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build Images') {
             steps {
-                sh '''
-                docker compose build --no-cache
-                '''
+                sh 'docker compose build'
             }
         }
 
-        stage('Start Containers') {
+        stage('Run Containers') {
             steps {
-                sh '''
-                docker compose up -d
-                '''
+                sh 'docker compose up -d'
             }
         }
 
         stage('Wait for Services') {
             steps {
-                sh '''
-                echo "Waiting for services to be ready..."
-                sleep 25
-                '''
+                sh 'sleep 20'
             }
         }
 
-        stage('Verify Backend Health') {
+        stage('Health Check') {
             steps {
-                sh '''
-                curl -f http://localhost:3000/health
-                '''
+                sh 'curl -f http://localhost:3000/health'
             }
         }
 
-        stage('Verify Frontend') {
+        stage('Frontend Check') {
             steps {
-                sh '''
-                curl -f http://localhost:3001 || true
-                '''
+                sh 'curl -f http://localhost:3001'
             }
         }
     }
 
     post {
-        always {
-            echo "Cleaning up unused Docker resources..."
-            sh 'docker system prune -f || true'
-        }
-
         success {
-            echo '✅ Deployment Successful 🚀'
+            echo "✅ Deployment Successful"
         }
-
         failure {
-            echo '❌ Deployment Failed'
+            echo "❌ Deployment Failed"
         }
     }
 }
