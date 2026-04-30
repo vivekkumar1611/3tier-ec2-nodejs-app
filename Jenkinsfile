@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        COMPOSE = "docker compose"
+    }
+
     stages {
 
         stage('Clean Workspace') {
@@ -11,7 +15,8 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
+                git branch: 'main',
+                url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
             }
         }
 
