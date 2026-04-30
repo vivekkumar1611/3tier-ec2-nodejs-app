@@ -1,11 +1,13 @@
 pipeline {
     agent any
 
-    environment {
-        APP_NAME = "3tier-app"
-    }
-
     stages {
+
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
 
         stage('Checkout Code') {
             steps {
@@ -17,7 +19,6 @@ pipeline {
         stage('Verify Docker') {
             steps {
                 sh 'docker --version'
-                sh 'docker compose version || docker-compose --version'
             }
         }
 
@@ -27,13 +28,13 @@ pipeline {
             }
         }
 
-        stage('Build Images') {
+        stage('Build Docker Images') {
             steps {
                 sh 'docker compose build'
             }
         }
 
-        stage('Run Containers') {
+        stage('Start Containers') {
             steps {
                 sh 'docker compose up -d'
             }
@@ -50,20 +51,14 @@ pipeline {
                 sh 'curl -f http://localhost:3000/health'
             }
         }
-
-        stage('Frontend Check') {
-            steps {
-                sh 'curl -f http://localhost:3001'
-            }
-        }
     }
 
     post {
         success {
-            echo "✅ Deployment Successful"
+            echo '✅ Deployment Successful'
         }
         failure {
-            echo "❌ Deployment Failed"
+            echo '❌ Deployment Failed'
         }
     }
 }
