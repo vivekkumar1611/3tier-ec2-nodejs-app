@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        APP_NAME = "3tier-app"
-    }
-
     stages {
 
         stage('Clean Workspace') {
@@ -15,47 +11,53 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
+                git branch: 'main', url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
+            }
+        }
+
+        stage('Verify Files') {
+            steps {
+                sh 'ls -la'
             }
         }
 
         stage('Verify Docker') {
             steps {
-                sh '''
-                docker --version
-                docker compose version || docker-compose --version
-                '''
+                sh 'docker --version'
+                sh 'docker compose version'
             }
         }
 
         stage('Stop Old Containers') {
             steps {
-                sh 'docker compose down || docker-compose down || true'
+                sh '''
+                    docker compose down -v --remove-orphans || true
+                    docker rm -f mysql-db backend frontend || true
+                '''
             }
         }
 
         stage('Build Images') {
             steps {
-                sh 'docker compose build || docker-compose build'
+                sh 'docker compose build'
             }
         }
 
         stage('Run Containers') {
             steps {
-                sh 'docker compose up -d || docker-compose up -d'
+                sh 'docker compose up -d'
             }
         }
 
         stage('Wait for Services') {
             steps {
-                sh 'sleep 25'
+                sh 'sleep 20'
             }
         }
 
         stage('Health Check') {
             steps {
-                sh 'curl -f http://localhost:3000/api/users'
+                sh 'curl -f http://localhost:3000/health'
             }
         }
 
@@ -68,10 +70,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Deployment Successful"
+            echo '✅ Deployment Successful'
         }
         failure {
-            echo "❌ Deployment Failed"
+            echo '❌ Deployment Failed'
         }
     }
 }
