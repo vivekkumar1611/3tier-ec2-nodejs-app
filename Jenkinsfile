@@ -1,84 +1,25 @@
-pipeline {
-    agent any
-
-    environment {
-        COMPOSE = "docker compose"
+stage('Build Docker Images') {
+    steps {
+        sh '''
+            docker build -t yourdockerhub/backend ./backend
+            docker build -t yourdockerhub/frontend ./frontend
+        '''
     }
+}
 
-    stages {
-
-        stage('Clean Workspace') {
-            steps {
-                deleteDir()
-            }
-        }
-
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
-            }
-        }
-
-        stage('Verify Files') {
-            steps {
-                sh 'ls -la'
-            }
-        }
-
-        stage('Verify Docker') {
-            steps {
-                sh 'docker --version'
-                sh 'docker compose version'
-            }
-        }
-
-        stage('Stop Old Containers') {
-            steps {
-                sh '''
-                    docker compose down -v --remove-orphans || true
-                    docker rm -f mysql-db backend frontend || true
-                '''
-            }
-        }
-
-        stage('Build Images') {
-            steps {
-                sh 'docker compose build'
-            }
-        }
-
-        stage('Run Containers') {
-            steps {
-                sh 'docker compose up -d'
-            }
-        }
-
-        stage('Wait for Services') {
-            steps {
-                sh 'sleep 20'
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                sh 'curl -f http://localhost:3000/health'
-            }
-        }
-
-        stage('Frontend Check') {
-            steps {
-                sh 'curl -f http://localhost:3001'
-            }
-        }
+stage('Push Images') {
+    steps {
+        sh '''
+            docker push yourdockerhub/backend
+            docker push yourdockerhub/frontend
+        '''
     }
+}
 
-    post {
-        success {
-            echo '✅ Deployment Successful'
-        }
-        failure {
-            echo '❌ Deployment Failed'
-        }
+stage('Deploy to Kubernetes') {
+    steps {
+        sh '''
+            kubectl apply -f k8s/
+        '''
     }
 }
