@@ -39,7 +39,7 @@ stages {
         }
     }
 
-    stage('Docker Login & Push') {
+    stage('Push Images') {
         steps {
             withCredentials([usernamePassword(
                 credentialsId: 'docker-creds',
@@ -55,7 +55,7 @@ stages {
         }
     }
 
-    stage('Deploy to Kubernetes') {
+    stage('Deploy') {
         steps {
             sh """
             kubectl apply -f k8s/
@@ -64,25 +64,16 @@ stages {
             """
         }
     }
-
-    stage('Verify Deployment') {
-        steps {
-            sh """
-            kubectl get pods
-            kubectl get svc
-            """
-        }
-    }
 }
 
 post {
     success {
-        echo "✅ Deployment Successful"
+        echo "SUCCESS"
     }
     failure {
-        echo "❌ Deployment Failed"
+        echo "FAILED"
     }
 }
-```
+
 
 }
