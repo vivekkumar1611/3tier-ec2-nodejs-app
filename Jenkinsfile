@@ -1,7 +1,6 @@
 pipeline {
 agent any
 
-```
 environment {
     DOCKER_IMAGE_BACKEND = 'vivekkumar1611/backend:latest'
     DOCKER_IMAGE_FRONTEND = 'vivekkumar1611/frontend:latest'
