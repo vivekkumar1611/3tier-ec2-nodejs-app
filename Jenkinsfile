@@ -3,7 +3,6 @@ agent any
 
 ```
 environment {
-    DOCKERHUB_CREDENTIALS = 'docker-creds'
     DOCKER_IMAGE_BACKEND = 'vivekkumar1611/backend:latest'
     DOCKER_IMAGE_FRONTEND = 'vivekkumar1611/frontend:latest'
     EC2_PUBLIC_IP = '16.171.84.119'
@@ -11,77 +10,77 @@ environment {
 
 stages {
 
-    stage('Clone Repo') {
+    stage('Clone Code') {
         steps {
             git branch: 'main',
             url: 'https://github.com/vivekkumar1611/3tier-ec2-nodejs-app.git'
         }
     }
 
-    stage('Verify Files') {
+    stage('Check Files') {
         steps {
             sh 'ls -l'
         }
     }
 
-    stage('Build Backend Image') {
+    stage('Build Backend') {
         steps {
-            sh 'docker build -t $DOCKER_IMAGE_BACKEND ./backend'
+            sh 'docker build -t vivekkumar1611/backend:latest ./backend'
         }
     }
 
-    stage('Build Frontend Image') {
+    stage('Build Frontend') {
         steps {
-            sh '''
+            sh """
             docker build \
             --build-arg REACT_APP_API_URL=http://$EC2_PUBLIC_IP:30180/api \
-            -t $DOCKER_IMAGE_FRONTEND ./frontend
-            '''
+            -t vivekkumar1611/frontend:latest ./frontend
+            """
         }
     }
 
-    stage('Push Images') {
+    stage('Docker Login & Push') {
         steps {
             withCredentials([usernamePassword(
                 credentialsId: 'docker-creds',
-                usernameVariable: 'USER',
-                passwordVariable: 'PASS'
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
             )]) {
-                sh '''
-                echo $PASS | docker login -u $USER --password-stdin
-                docker push $DOCKER_IMAGE_BACKEND
-                docker push $DOCKER_IMAGE_FRONTEND
-                '''
+                sh """
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                docker push vivekkumar1611/backend:latest
+                docker push vivekkumar1611/frontend:latest
+                """
             }
         }
     }
 
     stage('Deploy to Kubernetes') {
         steps {
-            sh '''
+            sh """
             kubectl apply -f k8s/
             kubectl rollout restart deployment backend
             kubectl rollout restart deployment frontend
-            '''
+            """
         }
     }
 
     stage('Verify Deployment') {
         steps {
-            sh '''
+            sh """
             kubectl get pods
             kubectl get svc
-            '''
+            """
         }
     }
 }
 
 post {
     success {
-        echo 'SUCCESS: Deployment completed'
+        echo "✅ Deployment Successful"
     }
     failure {
-        echo 'FAILED: Check logs'
+        echo "❌ Deployment Failed"
     }
 }
 ```
